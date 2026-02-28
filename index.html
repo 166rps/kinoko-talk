@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="description" content="スマホのカメラでキノコを映すと、キノコが感情豊かに話しかけてくるAR会話アプリ">
+  <meta name="theme-color" content="#0a0a0f">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Kinoko Talk - キノコと話そう</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Camera Layer -->
+  <div id="camera-layer">
+    <video id="camera-video" autoplay playsinline muted></video>
+    <canvas id="camera-canvas"></canvas>
+  </div>
+
+  <!-- Main App -->
+  <div id="app">
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <button class="btn-icon" id="btn-settings" aria-label="設定を開く">
+        <!-- Gear SVG -->
+        <svg viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="3"/>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Conversation Panel -->
+    <div class="conversation-panel">
+
+      <!-- Mushroom Info -->
+      <div class="mushroom-info hidden" id="mushroom-info">
+        <div class="emotion-icon" id="emotion-icon">
+          <!-- Default: neutral face SVG -->
+          <svg viewBox="0 0 32 32" fill="none" stroke="#8a8899" stroke-width="1.5">
+            <circle cx="16" cy="16" r="14"/>
+            <circle cx="11" cy="13" r="1.5" fill="#8a8899" stroke="none"/>
+            <circle cx="21" cy="13" r="1.5" fill="#8a8899" stroke="none"/>
+            <line x1="11" y1="21" x2="21" y2="21"/>
+          </svg>
+        </div>
+        <div class="mushroom-details">
+          <div class="mushroom-type" id="mushroom-type">スキャン待ち...</div>
+          <div class="mushroom-status" id="mushroom-status">キノコをカメラに映してください</div>
+        </div>
+      </div>
+
+      <!-- Chat Area -->
+      <div class="chat-area" id="chat-area">
+        <!-- Chat bubbles will be injected here -->
+      </div>
+
+      <!-- Loading Indicator -->
+      <div class="loading-indicator" id="loading-indicator">
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+        <div class="loading-dot"></div>
+      </div>
+
+      <!-- Mic Button -->
+      <div class="mic-wrapper" id="mic-wrapper">
+        <div class="mic-ripple"></div>
+        <button class="mic-btn" id="mic-btn" aria-label="話しかける（押しながら話す）">
+          <!-- Mic SVG -->
+          <svg viewBox="0 0 24 24">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+            <line x1="12" y1="19" x2="12" y2="23"/>
+            <line x1="8" y1="23" x2="16" y2="23"/>
+          </svg>
+        </button>
+        <div class="mic-hint" id="mic-hint">長押しで話しかける</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Initial Prompt (No API Key) -->
+  <div class="initial-prompt" id="initial-prompt">
+    <!-- Mushroom SVG Icon -->
+    <svg viewBox="0 0 64 64" fill="none" stroke-width="1.5">
+      <path d="M32 8C18 8 8 18 8 28c0 6 4 10 8 12h32c4-2 8-6 8-12 0-10-10-20-24-20z" stroke="#7c6fea" fill="rgba(124,111,234,0.1)"/>
+      <rect x="26" y="40" width="12" height="16" rx="3" stroke="#7c6fea"/>
+      <circle cx="22" cy="22" r="3" stroke="#7c6fea" opacity="0.5"/>
+      <circle cx="36" cy="18" r="2" stroke="#7c6fea" opacity="0.5"/>
+      <circle cx="28" cy="30" r="2.5" stroke="#7c6fea" opacity="0.5"/>
+    </svg>
+    <h2>Kinoko Talk</h2>
+    <p>カメラにキノコを映して、キノコとおしゃべりしよう。はじめにAPIキーを設定してください。</p>
+    <button class="btn-start" id="btn-open-settings">設定を開く</button>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal-overlay" id="settings-modal">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h3 class="modal-title">設定</h3>
+        <button class="modal-close" id="btn-close-settings" aria-label="閉じる">
+          <svg viewBox="0 0 16 16">
+            <line x1="4" y1="4" x2="12" y2="12"/>
+            <line x1="12" y1="4" x2="4" y2="12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- API Key Input -->
+      <div class="form-group">
+        <label class="form-label" for="input-api-key">Google AI Studio API キー</label>
+        <input class="form-input" id="input-api-key" type="password" placeholder="AIzaSy...">
+      </div>
+      <button class="btn-save" id="btn-save-settings">保存して開始</button>
+      <div class="save-feedback" id="save-feedback"></div>
+
+      <!-- Accordion: Terms & Privacy -->
+      <div class="accordion">
+        <div class="accordion-item" id="accordion-terms">
+          <button class="accordion-trigger" aria-expanded="false">
+            利用規約
+            <svg viewBox="0 0 14 14"><polyline points="3 5 7 9 11 5"/></svg>
+          </button>
+          <div class="accordion-content">
+            <div class="accordion-text">
+              <strong>Kinoko Talk 利用規約</strong><br><br>
+              1. 本サービスの概要<br>
+              Kinoko Talk（以下「本アプリ」）は、スマートフォンのカメラを通じて撮影されたキノコの画像をAIが解析し、エンターテインメント目的の会話体験を提供するWebアプリケーションです。<br><br>
+              2. 免責事項<br>
+              本アプリが提供するキノコの種類判別や状態の分析は、AIによるエンターテインメント目的の推測であり、正確性を保証するものではありません。キノコの食用可否の判断には絶対に使用しないでください。野生のキノコの採取・摂食については、必ず専門家にご相談ください。誤った判断による健康被害等について、開発者は一切の責任を負いません。<br><br>
+              3. 利用条件<br>
+              本アプリの利用にはGoogle AI StudioのAPIキーが必要です。APIの利用料金はユーザーの負担となります。APIキーはユーザーのブラウザ内（localStorage）にのみ保存され、開発者のサーバーに送信されることはありません。<br><br>
+              4. 禁止事項<br>
+              本アプリを違法な目的で使用すること、及びAPIを不正に利用する行為を禁止します。<br><br>
+              5. 変更について<br>
+              本規約は予告なく変更される場合があります。
+            </div>
+          </div>
+        </div>
+
+        <div class="accordion-item" id="accordion-privacy">
+          <button class="accordion-trigger" aria-expanded="false">
+            プライバシーポリシー
+            <svg viewBox="0 0 14 14"><polyline points="3 5 7 9 11 5"/></svg>
+          </button>
+          <div class="accordion-content">
+            <div class="accordion-text">
+              <strong>Kinoko Talk プライバシーポリシー</strong><br><br>
+              1. 収集する情報<br>
+              本アプリは以下の情報を一時的に利用します。<br>
+              ・カメラ映像：キノコの画像解析のためにリアルタイムで使用されます。画像はAPI送信後、保存されません。<br>
+              ・音声データ：音声認識のためにブラウザ内で処理されます。音声データは保存されません。<br>
+              ・APIキー：ユーザーが入力したAPIキーは、ブラウザのlocalStorageにのみ保存されます。<br><br>
+              2. データの送信先<br>
+              カメラで撮影された画像と音声から変換されたテキストは、Google（Gemini API）に送信されます。Googleのデータ取り扱いについてはGoogleのプライバシーポリシーをご確認ください。<br><br>
+              3. データの保存<br>
+              本アプリは独自のサーバーを持ちません。会話の履歴はブラウザのメモリ内（JavaScript変数）に一時的に保持され、ページを閉じると消去されます。<br><br>
+              4. Cookie<br>
+              本アプリはCookieを使用しません。APIキーの保存にはlocalStorageを使用します。<br><br>
+              5. お問い合わせ<br>
+              本ポリシーに関するお問い合わせは、アプリの開発者までご連絡ください。
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
