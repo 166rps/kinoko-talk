@@ -9,14 +9,18 @@
 
   // ─── Config ───
   const CONFIG = {
-    API_MODEL: 'gemini-2.0-flash',
+    API_MODEL: 'gemini-2.5-flash-lite',
     API_BASE: 'https://generativelanguage.googleapis.com/v1beta/models',
+    // ★ デフォルトのプロキシURL（Cloudflare Workers）
+    // これを設定することで、ユーザーは設定不要で即使える
+    DEFAULT_PROXY_URL: 'https://kinoko-api.wispy-limit-bec5.workers.dev',
     IMAGE_MAX_WIDTH: 512,
     IMAGE_QUALITY: 0.7,
-    AUTO_SPEAK_DELAY: 5000,
+    AUTO_SPEAK_DELAY: 60000,    // 60秒（無料枠節約）
     MAX_HISTORY: 4,
     VIBRATE_SHORT: 30,
     VIBRATE_LONG: 50,
+    DAILY_API_LIMIT: 18,        // 上限20のうち余裕を持って18
   };
 
   // ─── System Prompt ───
@@ -46,22 +50,29 @@
 【出力形式（厳守）】以下のJSONのみ出力。他のテキストは一切含めない。
 {"mushroom_found": true または false, "type": "キノコの種類名", "color": "キノコの主な色(hex)", "emotion": "happy/sad/angry/sleepy/scared/excited/neutral", "status": "状態を15文字以内で", "reply": "セリフ(2文以内、50文字以内)", "environment": "環境の説明(10文字以内)", "suggested_type": "提案するキノコ(映っていない場合のみ)", "suggested_color": "提案キノコの色hex(映っていない場合のみ)"}`;
 
-  // ─── Demo Mode Responses ───
+  // ─── Demo Mode Responses（大幅拡充版） ───
   const DEMO_RESPONSES = {
     found: [
       { type: 'シイタケ', color: '#8B6914', emotion: 'happy', status: '元気いっぱい', reply: 'おっ、やっと気づいてくれたか！俺、ここでずっと待ってたんだぞ。', environment: '薄暗い場所' },
       { type: 'エノキ', color: '#F5F5DC', emotion: 'scared', status: 'ちょっと不安', reply: 'う、うわっ！急にカメラ向けないでよ…恥ずかしいじゃん。', environment: '冷蔵庫の中' },
       { type: 'マイタケ', color: '#696969', emotion: 'excited', status: 'ノリノリ', reply: '見つけたな！俺を食べたら踊り出すほど美味いぜ！', environment: '木の根元' },
+      { type: 'マツタケ', color: '#C4A35A', emotion: 'neutral', status: '高貴', reply: 'ふん、庶民が私に話しかけるとは…まあ許そう。', environment: '松林' },
+      { type: 'しめじ', color: '#B8A88A', emotion: 'happy', status: 'みんな一緒', reply: '仲間と一緒だから元気百倍だぜ！一人じゃ寂しいからな。', environment: '湿った地面' },
+      { type: 'ベニテングタケ', color: '#CC2222', emotion: 'excited', status: '毒々しい', reply: 'ハハハ！俺の赤い傘に見惚れたか？触るなよ、痛い目見るぜ。', environment: '森の中' },
     ],
     notFound: [
       { type: '不明', suggested_type: 'シイタケ', suggested_color: '#8B6914', emotion: 'neutral', status: 'キノコ不在', reply: 'おーい、ここにキノコがいないぞ！俺を生やしてくれよ！', environment: '室内' },
       { type: '不明', suggested_type: 'ナメコ', suggested_color: '#DAA520', emotion: 'sad', status: 'キノコ不在', reply: 'さみしい場所だな…ヌルッとした俺がちょうどいいんじゃない？', environment: '湿った場所' },
       { type: '不明', suggested_type: 'エリンギ', suggested_color: '#F5DEB3', emotion: 'neutral', status: 'キノコ不在', reply: 'ここ、俺が生えたらいい感じになると思わない？', environment: '明るい場所' },
+      { type: '不明', suggested_type: 'マツタケ', suggested_color: '#C4A35A', emotion: 'happy', status: 'キノコ不在', reply: '高級な俺を呼ぶチャンスだぞ？生やすボタン押せよ。', environment: '自然の中' },
+      { type: '不明', suggested_type: 'ベニテングタケ', suggested_color: '#CC2222', emotion: 'excited', status: 'キノコ不在', reply: 'こんな場所に毒キノコ…ワクワクするだろ？生やせよ！', environment: '薄暗い場所' },
     ],
     virtual: [
       { emotion: 'happy', status: '生えたて新鮮', reply: 'やった！ここに生まれたぞ！なかなかいい場所じゃないか。' },
       { emotion: 'excited', status: '環境に満足', reply: 'ここ最高だな！日当たりも湿度もちょうどいいぜ！' },
       { emotion: 'neutral', status: 'まあまあ', reply: 'ふーん、まあ悪くないか。で、何か用？' },
+      { emotion: 'scared', status: 'ちょっと緊張', reply: 'い、今生まれたばかりなんだけど…ここ安全？' },
+      { emotion: 'happy', status: '元気に成長中', reply: 'おっしゃー！いい土だな！ぐんぐん育つぞー！' },
     ],
     chat: [
       { emotion: 'happy', reply: 'へへ、褒められると傘が開いちゃうな！' },
@@ -69,12 +80,19 @@
       { emotion: 'sleepy', reply: 'ふぁ〜…ちょっと眠いな。胞子まき散らしちゃうぞ。' },
       { emotion: 'sad', reply: '最近、誰も話しかけてくれなくてさ…嬉しいよ、ありがとな。' },
       { emotion: 'excited', reply: 'もっと話そうぜ！キノコの世界、奥が深いんだから！' },
+      { emotion: 'happy', reply: '知ってるか？キノコは地球上で最大の生物なんだぞ。すごいだろ。' },
+      { emotion: 'neutral', reply: 'まあ…キノコの人生も楽じゃないんだよ。湿度管理とかさ。' },
+      { emotion: 'scared', reply: 'え、まさか…食べる気じゃないよね？ね？冗談だよね？' },
+      { emotion: 'angry', reply: 'エノキだからって笑うなよ！細くてもハートは太いんだ！' },
+      { emotion: 'happy', reply: '俺の胞子、風に乗って世界中に飛んでくんだぜ。ロマンだろ？' },
+      { emotion: 'sleepy', reply: '日が暮れたら活動時間だ…今はちょっと休ませてくれ。' },
+      { emotion: 'excited', reply: '雨だ！雨が降ると俺たちの出番なんだよ！テンション上がる！' },
     ],
   };
 
   // ─── State ───
   const state = {
-    proxyUrl: localStorage.getItem('kinoko_proxy_url') || '',
+    proxyUrl: localStorage.getItem('kinoko_proxy_url') || CONFIG.DEFAULT_PROXY_URL,
     apiKey: localStorage.getItem('kinoko_api_key') || '',
     stream: null,
     isRecording: false,
@@ -161,6 +179,39 @@
     return 'demo';
   }
 
+  // ─── Daily API Usage Tracking ───
+  function getTodayKey() {
+    const d = new Date();
+    return `kinoko_usage_${d.getFullYear()}_${d.getMonth()}_${d.getDate()}`;
+  }
+
+  function getDailyUsage() {
+    const key = getTodayKey();
+    return parseInt(localStorage.getItem(key) || '0', 10);
+  }
+
+  function incrementDailyUsage() {
+    const key = getTodayKey();
+    const count = getDailyUsage() + 1;
+    localStorage.setItem(key, String(count));
+    // Clean up old keys (keep only today)
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('kinoko_usage_') && k !== key) {
+        localStorage.removeItem(k);
+      }
+    }
+    return count;
+  }
+
+  function getRemainingCalls() {
+    return Math.max(0, CONFIG.DAILY_API_LIMIT - getDailyUsage());
+  }
+
+  function canUseAPI() {
+    return getDailyUsage() < CONFIG.DAILY_API_LIMIT;
+  }
+
   // ─── Virtual Mushroom SVG Generator ───
   function generateMushroomSvg(color, type) {
     const capColor = color || '#8B6914';
@@ -237,12 +288,18 @@
     if (mode === 'demo') {
       el.modeBadge.textContent = 'デモモード';
       el.modeBadge.className = 'mode-badge visible demo';
-    } else if (mode === 'proxy') {
-      el.modeBadge.textContent = '';
-      el.modeBadge.className = 'mode-badge';
     } else {
-      el.modeBadge.textContent = '';
-      el.modeBadge.className = 'mode-badge';
+      const remaining = getRemainingCalls();
+      if (remaining <= 0) {
+        el.modeBadge.textContent = 'API上限到達 - デモモード';
+        el.modeBadge.className = 'mode-badge visible demo';
+      } else if (remaining <= 5) {
+        el.modeBadge.textContent = `残り ${remaining} 回`;
+        el.modeBadge.className = 'mode-badge visible demo';
+      } else {
+        el.modeBadge.textContent = `残り ${remaining} 回`;
+        el.modeBadge.className = 'mode-badge visible';
+      }
     }
   }
 
@@ -360,8 +417,11 @@
 
     const apiMode = getApiMode();
 
-    if (apiMode === 'demo') {
-      // Demo mode
+    // デモモード、またはAPI上限到達時はデモ応答
+    if (apiMode === 'demo' || !canUseAPI()) {
+      if (!canUseAPI() && apiMode !== 'demo') {
+        showToast('本日のAPI上限に到達。デモモードで応答します');
+      }
       setTimeout(() => {
         const response = generateDemoResponse(userText);
         handleMushroomResponse(response, userText);
@@ -445,6 +505,8 @@
         else throw new Error('JSONの解析に失敗');
       }
 
+      incrementDailyUsage();
+      updateModeBadge();
       handleMushroomResponse(parsed, userText);
     } catch (err) {
       console.error('API error:', err);
@@ -631,6 +693,8 @@
     clearAutoSpeakTimer();
     if (!state.stream || state.isProcessing || state.isRecording || state.isSpeaking) return;
     if (state.mode === 'no-mushroom' || state.mode === 'scanning') return;
+    // API上限が近い場合は自動発話を抑制（手動の会話を優先）
+    if (getApiMode() !== 'demo' && getRemainingCalls() <= 5) return;
 
     state.autoSpeakTimer = setTimeout(() => {
       if (!state.isRecording && !state.isProcessing && !state.isSpeaking) {
