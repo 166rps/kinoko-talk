@@ -135,6 +135,8 @@
     btnGrow: $('btn-grow'),
     btnRemove: $('btn-remove'),
     btnShare: $('btn-share'),
+    textInput: $('text-input'),
+    btnSend: $('btn-send'),
     micWrapper: $('mic-wrapper'),
     micBtn: $('mic-btn'),
     micHint: $('mic-hint'),
@@ -213,14 +215,20 @@
     return getDailyUsage() < CONFIG.DAILY_API_LIMIT;
   }
 
-  // ─── Virtual Mushroom SVG Generator ───
+  // ─── Virtual Mushroom SVG Generator (レスポンシブ) ───
+  function getMushroomSize() {
+    const vw = window.innerWidth;
+    const size = Math.min(Math.max(vw * 0.2, 100), 260);
+    return { w: Math.round(size), h: Math.round(size * 1.2) };
+  }
+
   function generateMushroomSvg(color, type) {
     const capColor = color || '#8B6914';
-    // Adjust stem and spot colors
     const stemColor = '#F5F0E0';
     const spotOpacity = 0.3;
+    const { w, h } = getMushroomSize();
 
-    return `<svg width="100" height="120" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+    return `<svg width="${w}" height="${h}" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
       <!-- Shadow -->
       <ellipse cx="50" cy="115" rx="30" ry="5" fill="rgba(0,0,0,0.3)"/>
       <!-- Stem -->
@@ -612,6 +620,14 @@
     el.virtualSvg.innerHTML = generateMushroomSvg(color, type);
     el.virtualLayer.classList.remove('removing');
     el.virtualLayer.classList.remove('visible');
+
+    // Position mushroom in center-bottom of screen
+    const { w, h } = getMushroomSize();
+    const initX = (window.innerWidth - w) / 2;
+    const initY = window.innerHeight * 0.35;
+    el.virtualLayer.style.left = initX + 'px';
+    el.virtualLayer.style.top = initY + 'px';
+
     // Force reflow
     void el.virtualLayer.offsetWidth;
     el.virtualLayer.classList.add('visible', 'growing');
@@ -631,6 +647,46 @@
       el.chatArea.innerHTML = '';
       sendToAPI('');
     }, 500);
+  }
+
+  // ─── Drag to Position Mushroom ───
+  function setupMushroomDrag() {
+    let isDragging = false;
+    let startX, startY, origX, origY;
+
+    function onStart(e) {
+      if (state.mode !== 'virtual') return;
+      isDragging = true;
+      el.virtualLayer.classList.add('dragging');
+      const touch = e.touches ? e.touches[0] : e;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      origX = el.virtualLayer.offsetLeft;
+      origY = el.virtualLayer.offsetTop;
+      e.preventDefault();
+    }
+
+    function onMove(e) {
+      if (!isDragging) return;
+      const touch = e.touches ? e.touches[0] : e;
+      const dx = touch.clientX - startX;
+      const dy = touch.clientY - startY;
+      el.virtualLayer.style.left = (origX + dx) + 'px';
+      el.virtualLayer.style.top = (origY + dy) + 'px';
+      e.preventDefault();
+    }
+
+    function onEnd() {
+      isDragging = false;
+      el.virtualLayer.classList.remove('dragging');
+    }
+
+    el.virtualLayer.addEventListener('touchstart', onStart, { passive: false });
+    el.virtualLayer.addEventListener('touchmove', onMove, { passive: false });
+    el.virtualLayer.addEventListener('touchend', onEnd);
+    el.virtualLayer.addEventListener('mousedown', onStart);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onEnd);
   }
 
   function removeMushroom() {
@@ -776,11 +832,32 @@
     }
   }
 
+  // ─── Text Input Send ───
+  function sendTextInput() {
+    const text = el.textInput.value.trim();
+    if (!text) return;
+    el.textInput.value = '';
+    el.textInput.blur();
+    sendToAPI(text);
+  }
+
+  function setupTextInput() {
+    el.btnSend.addEventListener('click', sendTextInput);
+    el.textInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        sendTextInput();
+      }
+    });
+  }
+
   // ─── Init ───
   function init() {
     setupAccordions();
     setupSpeechRecognition();
     setupMicButton();
+    setupTextInput();
+    setupMushroomDrag();
 
     el.btnStartApp.addEventListener('click', startApp);
     el.btnOpenSettingsInit.addEventListener('click', openSettings);

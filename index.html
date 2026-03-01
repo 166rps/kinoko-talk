@@ -89,6 +89,14 @@
         キノコを生やす
       </button>
 
+      <!-- Text Input Row -->
+      <div class="text-input-row">
+        <input class="text-input-field" id="text-input" type="text" placeholder="キノコに話しかける..." enterkeyhint="send">
+        <button class="btn-send" id="btn-send" aria-label="送信">
+          <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+
       <!-- Mic + Action Row -->
       <div class="action-row">
         <div class="mic-wrapper" id="mic-wrapper">
@@ -103,7 +111,7 @@
           </button>
         </div>
       </div>
-      <div class="mic-hint" id="mic-hint">長押しで話しかける</div>
+      <div class="mic-hint" id="mic-hint">マイクが使えない場合はテキスト入力へ</div>
 
     </div>
   </div>
