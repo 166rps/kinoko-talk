@@ -215,47 +215,16 @@
     return getDailyUsage() < CONFIG.DAILY_API_LIMIT;
   }
 
-  // ─── Virtual Mushroom SVG Generator (レスポンシブ) ───
+  // ─── Virtual Mushroom Image (かわいいPNGキャラ) ───
   function getMushroomSize() {
     const vw = window.innerWidth;
-    const size = Math.min(Math.max(vw * 0.2, 100), 260);
-    return { w: Math.round(size), h: Math.round(size * 1.2) };
+    const size = Math.min(Math.max(vw * 0.25, 120), 280);
+    return size;
   }
 
-  function generateMushroomSvg(color, type) {
-    const capColor = color || '#8B6914';
-    const stemColor = '#F5F0E0';
-    const spotOpacity = 0.3;
-    const { w, h } = getMushroomSize();
-
-    return `<svg width="${w}" height="${h}" viewBox="0 0 100 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <!-- Shadow -->
-      <ellipse cx="50" cy="115" rx="30" ry="5" fill="rgba(0,0,0,0.3)"/>
-      <!-- Stem -->
-      <rect x="38" y="60" width="24" height="50" rx="8" fill="${stemColor}" stroke="${capColor}" stroke-width="1" opacity="0.9"/>
-      <!-- Cap -->
-      <ellipse cx="50" cy="60" rx="42" ry="32" fill="${capColor}"/>
-      <ellipse cx="50" cy="60" rx="42" ry="32" fill="url(#capShine)"/>
-      <!-- Cap spots -->
-      <circle cx="35" cy="50" r="5" fill="white" opacity="${spotOpacity}"/>
-      <circle cx="58" cy="42" r="4" fill="white" opacity="${spotOpacity}"/>
-      <circle cx="46" cy="62" r="3.5" fill="white" opacity="${spotOpacity}"/>
-      <circle cx="67" cy="55" r="3" fill="white" opacity="${spotOpacity}"/>
-      <!-- Eyes -->
-      <circle cx="40" cy="55" r="3" fill="#333"/>
-      <circle cx="60" cy="55" r="3" fill="#333"/>
-      <circle cx="41" cy="54" r="1" fill="white"/>
-      <circle cx="61" cy="54" r="1" fill="white"/>
-      <!-- Mouth -->
-      <path d="M44 64 Q50 69 56 64" stroke="#333" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      <!-- Gradient -->
-      <defs>
-        <radialGradient id="capShine" cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stop-color="white" stop-opacity="0.2"/>
-          <stop offset="100%" stop-color="white" stop-opacity="0"/>
-        </radialGradient>
-      </defs>
-    </svg>`;
+  function generateMushroomHtml() {
+    const size = getMushroomSize();
+    return `<img src="mushroom.png" alt="キノコ" width="${size}" height="${size}" style="display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5));" draggable="false">`;
   }
 
   // ─── Accordion ───
@@ -553,45 +522,44 @@
 
   // ─── Handle Response ───
   function handleMushroomResponse(data, userText) {
-    const mushroomFound = data.mushroom_found !== false;
-    const type = data.type || '不明';
     const emotion = data.emotion || 'neutral';
     const status = data.status || '';
     const reply = data.reply || '...';
-    const color = data.color || '#8B6914';
 
-    // Update emotion icon
+    // Update emotion
     state.currentEmotion = emotion;
     updateEmotionIcon(emotion);
+    updateMushroomEmotion(emotion);
 
-    if (mushroomFound || state.mode === 'virtual') {
-      // Mushroom is present (real or virtual)
-      setMode(state.mode === 'virtual' ? 'virtual' : 'real');
-      el.mushroomType.textContent = type;
-      el.mushroomStatus.textContent = status;
+    // バーチャルモード時は強制的にキノコがいるとして処理
+    if (state.mode === 'virtual') {
+      el.mushroomType.textContent = state.virtualMushroomType || 'キノコ';
+      el.mushroomStatus.textContent = status || 'おしゃべり中';
       el.mushroomInfo.classList.add('visible');
       el.btnGrow.classList.remove('visible');
+    } else {
+      const mushroomFound = data.mushroom_found !== false;
+      const type = data.type || '不明';
 
-      if (state.mode === 'real') {
-        // Hide virtual mushroom for real mode
+      if (mushroomFound) {
+        setMode('real');
+        el.mushroomType.textContent = type;
+        el.mushroomStatus.textContent = status;
+        el.mushroomInfo.classList.add('visible');
+        el.btnGrow.classList.remove('visible');
         el.virtualLayer.classList.remove('visible');
         el.btnRemove.style.display = 'none';
+      } else {
+        setMode('no-mushroom');
+        const sugType = data.suggested_type || 'シイタケ';
+        const sugColor = data.suggested_color || '#8B6914';
+        el.mushroomType.textContent = `${sugType}がオススメ`;
+        el.mushroomStatus.textContent = data.environment || '分析中...';
+        el.mushroomInfo.classList.add('visible');
+        state.virtualMushroomType = sugType;
+        state.virtualMushroomColor = sugColor;
+        el.btnGrow.classList.add('visible');
       }
-    } else {
-      // No mushroom found
-      setMode('no-mushroom');
-      const sugType = data.suggested_type || 'シイタケ';
-      const sugColor = data.suggested_color || '#8B6914';
-      el.mushroomType.textContent = `${sugType}がオススメ`;
-      el.mushroomStatus.textContent = data.environment || '分析中...';
-      el.mushroomInfo.classList.add('visible');
-
-      // Store suggestion for grow button
-      state.virtualMushroomType = sugType;
-      state.virtualMushroomColor = sugColor;
-
-      // Show grow button
-      el.btnGrow.classList.add('visible');
     }
 
     addChatBubble('mushroom', reply);
@@ -616,17 +584,18 @@
     const type = state.virtualMushroomType || 'シイタケ';
     const color = state.virtualMushroomColor || '#8B6914';
 
-    // Render SVG mushroom
-    el.virtualSvg.innerHTML = generateMushroomSvg(color, type);
+    // Render mushroom character image
+    el.virtualSvg.innerHTML = generateMushroomHtml();
     el.virtualLayer.classList.remove('removing');
     el.virtualLayer.classList.remove('visible');
 
-    // Position mushroom in center-bottom of screen
-    const { w, h } = getMushroomSize();
-    const initX = (window.innerWidth - w) / 2;
-    const initY = window.innerHeight * 0.35;
+    // Position mushroom in center of screen
+    const size = getMushroomSize();
+    const initX = (window.innerWidth - size) / 2;
+    const initY = window.innerHeight * 0.3;
     el.virtualLayer.style.left = initX + 'px';
     el.virtualLayer.style.top = initY + 'px';
+    el.virtualLayer.style.zIndex = '5';
 
     // Force reflow
     void el.virtualLayer.offsetWidth;
@@ -715,6 +684,14 @@
   // ─── Emotion Icon ───
   function updateEmotionIcon(emotion) {
     el.emotionIcon.innerHTML = EMOTION_SVGS[emotion] || EMOTION_SVGS.neutral;
+  }
+
+  // ─── Mushroom Emotion Animation ───
+  const EMOTION_CLASSES = ['emo-happy', 'emo-sad', 'emo-angry', 'emo-sleepy', 'emo-scared', 'emo-excited', 'emo-neutral'];
+
+  function updateMushroomEmotion(emotion) {
+    EMOTION_CLASSES.forEach(c => el.virtualSvg.classList.remove(c));
+    el.virtualSvg.classList.add('emo-' + (emotion || 'neutral'));
   }
 
   // ─── TTS ───

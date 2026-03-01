@@ -138,6 +138,49 @@ html, body {
   100% { transform: translateY(-6px) rotate(1deg); }
 }
 
+/* ─── Mushroom Emotion Animations ─── */
+.virtual-mushroom-svg.emo-happy { animation: emoHappy 0.6s ease-in-out infinite alternate; }
+.virtual-mushroom-svg.emo-sad { animation: emoSad 2s ease-in-out infinite alternate; }
+.virtual-mushroom-svg.emo-angry { animation: emoAngry 0.1s ease-in-out infinite; }
+.virtual-mushroom-svg.emo-sleepy { animation: emoSleepy 3s ease-in-out infinite alternate; }
+.virtual-mushroom-svg.emo-scared { animation: emoScared 0.08s ease-in-out infinite; }
+.virtual-mushroom-svg.emo-excited { animation: emoExcited 0.4s ease-in-out infinite alternate; }
+.virtual-mushroom-svg.emo-neutral { animation: none; }
+
+@keyframes emoHappy {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-12px) scale(1.05); }
+}
+
+@keyframes emoSad {
+  0% { transform: rotate(-3deg) translateY(0); }
+  100% { transform: rotate(3deg) translateY(4px); }
+}
+
+@keyframes emoAngry {
+  0% { transform: translateX(-2px); }
+  50% { transform: translateX(2px); }
+  100% { transform: translateX(-2px); }
+}
+
+@keyframes emoSleepy {
+  0% { transform: rotate(-5deg) scale(0.97); }
+  100% { transform: rotate(5deg) scale(1.0); }
+}
+
+@keyframes emoScared {
+  0% { transform: translate(-1px, -1px); }
+  25% { transform: translate(1px, 0px); }
+  50% { transform: translate(-1px, 1px); }
+  75% { transform: translate(1px, -1px); }
+  100% { transform: translate(-1px, -1px); }
+}
+
+@keyframes emoExcited {
+  0% { transform: translateY(0) rotate(-5deg) scale(1); }
+  100% { transform: translateY(-16px) rotate(5deg) scale(1.08); }
+}
+
 /* ─── App Layout ─── */
 #app {
   position: relative;
