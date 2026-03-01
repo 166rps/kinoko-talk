@@ -134,6 +134,7 @@
     loadingIndicator: $('loading-indicator'),
     btnGrow: $('btn-grow'),
     btnRemove: $('btn-remove'),
+    btnShare: $('btn-share'),
     micWrapper: $('mic-wrapper'),
     micBtn: $('mic-btn'),
     micHint: $('mic-hint'),
@@ -591,6 +592,7 @@
     if (userText) state.conversationHistory.push({ role: 'user', text: userText });
     state.conversationHistory.push({ role: 'mushroom', text: reply });
     while (state.conversationHistory.length > CONFIG.MAX_HISTORY * 2) state.conversationHistory.shift();
+    updateShareButton();
 
     speakText(reply, emotion);
   }
@@ -713,6 +715,56 @@
     if (show) el.chatArea.scrollTop = el.chatArea.scrollHeight;
   }
 
+  // ─── Share Conversation ───
+  function buildShareText() {
+    const type = el.mushroomType.textContent || 'キノコ';
+    let text = `\u{1F344} ${type}とおしゃべりしたよ！\n\n`;
+    state.conversationHistory.forEach(entry => {
+      if (entry.role === 'user') {
+        text += `私「${entry.text}」\n`;
+      } else {
+        text += `${type}「${entry.text}」\n`;
+      }
+    });
+    text += `\n▶ Kinoko Talk で遊ぶ\nhttps://166rps.github.io/kinoko-talk/`;
+    return text;
+  }
+
+  async function shareConversation() {
+    if (state.conversationHistory.length === 0) {
+      showToast('まだ会話がありません');
+      return;
+    }
+
+    const text = buildShareText();
+
+    // Web Share API を試みる（スマホで有効）
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Kinoko Talk - キノコとの会話',
+          text: text,
+        });
+        return;
+      } catch (err) {
+        // ユーザーがキャンセルした場合は何もしない
+        if (err.name === 'AbortError') return;
+      }
+    }
+
+    // フォールバック: クリップボードにコピー
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('会話をコピーしました');
+    } catch (_) {
+      showToast('シェアに失敗しました', true);
+    }
+  }
+
+  function updateShareButton() {
+    el.btnShare.style.display = state.conversationHistory.length > 0 ? 'flex' : 'none';
+  }
+
   // ─── App Start ───
   function startApp() {
     state.isDemoMode = getApiMode() === 'demo';
@@ -738,6 +790,7 @@
     el.btnSave.addEventListener('click', saveSettings);
     el.btnGrow.addEventListener('click', growMushroom);
     el.btnRemove.addEventListener('click', removeMushroom);
+    el.btnShare.addEventListener('click', shareConversation);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
