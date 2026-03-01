@@ -1,9 +1,8 @@
 /* ============================================
-   Kinoko Talk - CSS Design System
+   Kinoko Talk v2 - CSS Design System
    Mobile-first, Glassmorphism, Premium Dark UI
    ============================================ */
 
-/* --- Reset & Base --- */
 *, *::before, *::after {
   margin: 0;
   padding: 0;
@@ -21,6 +20,8 @@
   --color-accent-glow: rgba(124, 111, 234, 0.3);
   --color-mic-active: #ea6f7c;
   --color-mic-active-glow: rgba(234, 111, 124, 0.4);
+  --color-grow: #6fea8a;
+  --color-grow-glow: rgba(111, 234, 138, 0.3);
   --color-success: #6feaa0;
   --color-warning: #eacc6f;
   --color-danger: #ea6f7c;
@@ -46,7 +47,7 @@ html, body {
   -webkit-user-select: none;
 }
 
-/* --- Camera Fullscreen Background --- */
+/* ─── Camera Layer ─── */
 #camera-layer {
   position: fixed;
   inset: 0;
@@ -61,28 +62,82 @@ html, body {
   display: block;
 }
 
-#camera-canvas {
-  display: none;
-}
+#camera-canvas { display: none; }
 
-/* Camera overlay gradient (darkens bottom for readability) */
 #camera-layer::after {
   content: '';
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
-    transparent 30%,
-    rgba(10, 10, 15, 0.4) 60%,
+    transparent 25%,
+    rgba(10, 10, 15, 0.3) 55%,
     rgba(10, 10, 15, 0.85) 100%
   );
   pointer-events: none;
 }
 
-/* --- Main App Layout --- */
+/* ─── Virtual Mushroom Overlay ─── */
+.virtual-mushroom-layer {
+  position: fixed;
+  bottom: 38%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+
+.virtual-mushroom-layer.visible {
+  opacity: 1;
+}
+
+.virtual-mushroom-layer.growing {
+  animation: mushroomGrow 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes mushroomGrow {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) scale(0) translateY(40px);
+  }
+  60% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.15) translateY(-5px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) scale(1) translateY(0);
+  }
+}
+
+.virtual-mushroom-layer.removing {
+  animation: mushroomRemove 0.5s ease-in forwards;
+}
+
+@keyframes mushroomRemove {
+  0% { opacity: 1; transform: translateX(-50%) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) scale(0.3) translateY(30px); }
+}
+
+.virtual-mushroom-svg {
+  filter: drop-shadow(0 4px 20px rgba(0,0,0,0.5));
+}
+
+.virtual-mushroom-svg.speaking {
+  animation: mushroomBob 0.6s ease-in-out infinite alternate;
+}
+
+@keyframes mushroomBob {
+  0% { transform: translateY(0) rotate(-1deg); }
+  100% { transform: translateY(-6px) rotate(1deg); }
+}
+
+/* ─── App Layout ─── */
 #app {
   position: relative;
-  z-index: 1;
+  z-index: 3;
   width: 100%;
   height: 100%;
   display: flex;
@@ -90,7 +145,7 @@ html, body {
   justify-content: flex-end;
 }
 
-/* --- Top Bar (Settings Gear) --- */
+/* ─── Top Bar ─── */
 .top-bar {
   position: fixed;
   top: 0;
@@ -98,11 +153,14 @@ html, body {
   right: 0;
   z-index: 10;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   align-items: center;
   padding: 12px 16px;
   padding-top: max(12px, env(safe-area-inset-top));
 }
+
+.top-left { display: flex; gap: 8px; }
+.top-right { display: flex; gap: 8px; }
 
 .btn-icon {
   width: 40px;
@@ -120,9 +178,7 @@ html, body {
   transition: background var(--transition-fast);
 }
 
-.btn-icon:active {
-  background: rgba(255, 255, 255, 0.1);
-}
+.btn-icon:active { background: rgba(255, 255, 255, 0.12); }
 
 .btn-icon svg {
   width: 20px;
@@ -134,18 +190,49 @@ html, body {
   stroke-linejoin: round;
 }
 
-/* --- Conversation Panel (Bottom Glass) --- */
+/* Mode badge */
+.mode-badge {
+  position: fixed;
+  top: max(14px, env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: var(--color-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-glass-border);
+  color: var(--color-text-dim);
+  transition: all var(--transition-normal);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.mode-badge.visible {
+  opacity: 1;
+}
+
+.mode-badge.demo {
+  border-color: var(--color-warning);
+  color: var(--color-warning);
+}
+
+/* ─── Conversation Panel ─── */
 .conversation-panel {
   flex-shrink: 0;
-  padding: 20px 20px;
+  padding: 16px 20px;
   padding-bottom: max(20px, env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
-/* --- Mushroom Info Bar --- */
+/* ─── Mushroom Info ─── */
 .mushroom-info {
   width: 100%;
   display: flex;
@@ -157,12 +244,14 @@ html, body {
   border: 1px solid var(--color-glass-border);
   border-radius: var(--radius-md);
   padding: 12px 16px;
+  opacity: 0;
   transition: opacity var(--transition-normal);
+  pointer-events: none;
 }
 
-.mushroom-info.hidden {
-  opacity: 0;
-  pointer-events: none;
+.mushroom-info.visible {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .emotion-icon {
@@ -180,10 +269,7 @@ html, body {
   transition: all var(--transition-normal);
 }
 
-.mushroom-details {
-  flex: 1;
-  min-width: 0;
-}
+.mushroom-details { flex: 1; min-width: 0; }
 
 .mushroom-type {
   font-size: 13px;
@@ -204,21 +290,18 @@ html, body {
   text-overflow: ellipsis;
 }
 
-/* --- Chat Bubbles --- */
+/* ─── Chat Area ─── */
 .chat-area {
   width: 100%;
-  max-height: 180px;
+  max-height: 160px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
   scrollbar-width: none;
-  -ms-overflow-style: none;
 }
 
-.chat-area::-webkit-scrollbar {
-  display: none;
-}
+.chat-area::-webkit-scrollbar { display: none; }
 
 .chat-bubble {
   max-width: 85%;
@@ -246,17 +329,11 @@ html, body {
 }
 
 @keyframes bubbleFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-/* --- Loading Indicator (Mushroom Thinking) --- */
+/* ─── Loading Dots ─── */
 .loading-indicator {
   display: none;
   align-self: flex-start;
@@ -281,7 +358,6 @@ html, body {
   border-radius: var(--radius-full);
   animation: dotBounce 1.2s ease-in-out infinite;
 }
-
 .loading-dot:nth-child(2) { animation-delay: 0.15s; }
 .loading-dot:nth-child(3) { animation-delay: 0.3s; }
 
@@ -290,23 +366,98 @@ html, body {
   30% { transform: translateY(-6px); opacity: 1; }
 }
 
-/* --- Mic Button --- */
-.mic-wrapper {
-  position: relative;
+/* ─── Action Buttons Row ─── */
+.action-row {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Grow Button */
+.btn-grow {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: rgba(111, 234, 138, 0.15);
+  border: 1px solid rgba(111, 234, 138, 0.3);
+  border-radius: var(--radius-md);
+  color: var(--color-grow);
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  animation: fadeSlideUp 0.4s ease forwards;
+}
+
+.btn-grow.visible { display: flex; }
+.btn-grow:active { background: rgba(111, 234, 138, 0.25); }
+
+.btn-grow svg {
+  width: 18px;
+  height: 18px;
+  stroke: var(--color-grow);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Remove Button */
+.btn-remove {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(234, 111, 124, 0.1);
+  border: 1px solid rgba(234, 111, 124, 0.2);
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  font-family: var(--font-main);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-remove.visible { display: flex; }
+.btn-remove:active { background: rgba(234, 111, 124, 0.2); }
+
+.btn-remove svg {
+  width: 14px;
+  height: 14px;
+  stroke: var(--color-danger);
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ─── Mic Button ─── */
+.mic-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .mic-ripple {
   position: absolute;
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   border-radius: var(--radius-full);
   border: 2px solid var(--color-accent);
   opacity: 0;
   pointer-events: none;
-  transition: none;
 }
 
 .mic-wrapper.recording .mic-ripple {
@@ -314,19 +465,13 @@ html, body {
 }
 
 @keyframes rippleExpand {
-  0% {
-    transform: scale(1);
-    opacity: 0.5;
-  }
-  100% {
-    transform: scale(2);
-    opacity: 0;
-  }
+  0% { transform: scale(1); opacity: 0.5; }
+  100% { transform: scale(2.2); opacity: 0; }
 }
 
 .mic-btn {
-  width: 64px;
-  height: 64px;
+  width: 60px;
+  height: 60px;
   border: none;
   border-radius: var(--radius-full);
   background: var(--color-accent);
@@ -340,16 +485,15 @@ html, body {
   z-index: 1;
 }
 
-.mic-btn:active,
-.mic-wrapper.recording .mic-btn {
+.mic-btn:active, .mic-wrapper.recording .mic-btn {
   background: var(--color-mic-active);
   box-shadow: 0 4px 32px var(--color-mic-active-glow);
   transform: scale(1.08);
 }
 
 .mic-btn svg {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   stroke: #fff;
   fill: none;
   stroke-width: 2;
@@ -362,10 +506,9 @@ html, body {
   color: var(--color-text-subtle);
   margin-top: 8px;
   text-align: center;
-  transition: opacity var(--transition-normal);
 }
 
-/* --- Settings Modal (Overlay) --- */
+/* ─── Settings Modal ─── */
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -381,10 +524,7 @@ html, body {
   transition: opacity var(--transition-normal);
 }
 
-.modal-overlay.open {
-  opacity: 1;
-  pointer-events: auto;
-}
+.modal-overlay.open { opacity: 1; pointer-events: auto; }
 
 .modal-sheet {
   width: 100%;
@@ -399,9 +539,7 @@ html, body {
   transition: transform var(--transition-normal);
 }
 
-.modal-overlay.open .modal-sheet {
-  transform: translateY(0);
-}
+.modal-overlay.open .modal-sheet { transform: translateY(0); }
 
 .modal-header {
   display: flex;
@@ -410,11 +548,7 @@ html, body {
   margin-bottom: 24px;
 }
 
-.modal-title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-text);
-}
+.modal-title { font-size: 18px; font-weight: 700; }
 
 .modal-close {
   width: 32px;
@@ -437,10 +571,8 @@ html, body {
   stroke-linecap: round;
 }
 
-/* --- Form Elements --- */
-.form-group {
-  margin-bottom: 20px;
-}
+/* ─── Form ─── */
+.form-group { margin-bottom: 20px; }
 
 .form-label {
   display: block;
@@ -450,6 +582,13 @@ html, body {
   letter-spacing: 0.06em;
   color: var(--color-text-dim);
   margin-bottom: 8px;
+}
+
+.form-hint {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  margin-top: 4px;
+  line-height: 1.5;
 }
 
 .form-input {
@@ -465,13 +604,8 @@ html, body {
   transition: border-color var(--transition-fast);
 }
 
-.form-input:focus {
-  border-color: var(--color-accent);
-}
-
-.form-input::placeholder {
-  color: var(--color-text-subtle);
-}
+.form-input:focus { border-color: var(--color-accent); }
+.form-input::placeholder { color: var(--color-text-subtle); }
 
 .btn-save {
   width: 100%;
@@ -487,9 +621,7 @@ html, body {
   transition: opacity var(--transition-fast);
 }
 
-.btn-save:active {
-  opacity: 0.8;
-}
+.btn-save:active { opacity: 0.8; }
 
 .save-feedback {
   text-align: center;
@@ -499,16 +631,14 @@ html, body {
   min-height: 18px;
 }
 
-/* --- Accordion (Terms / Privacy) --- */
+/* ─── Accordion ─── */
 .accordion {
   margin-top: 24px;
   border-top: 1px solid var(--color-glass-border);
   padding-top: 16px;
 }
 
-.accordion-item {
-  margin-bottom: 8px;
-}
+.accordion-item { margin-bottom: 4px; }
 
 .accordion-trigger {
   width: 100%;
@@ -526,10 +656,7 @@ html, body {
   transition: color var(--transition-fast);
 }
 
-.accordion-trigger:hover,
-.accordion-trigger:active {
-  color: var(--color-text);
-}
+.accordion-trigger:active { color: var(--color-text); }
 
 .accordion-trigger svg {
   width: 14px;
@@ -541,9 +668,7 @@ html, body {
   transition: transform var(--transition-fast);
 }
 
-.accordion-item.open .accordion-trigger svg {
-  transform: rotate(180deg);
-}
+.accordion-item.open .accordion-trigger svg { transform: rotate(180deg); }
 
 .accordion-content {
   max-height: 0;
@@ -551,9 +676,7 @@ html, body {
   transition: max-height var(--transition-normal);
 }
 
-.accordion-item.open .accordion-content {
-  max-height: 600px;
-}
+.accordion-item.open .accordion-content { max-height: 600px; }
 
 .accordion-text {
   padding: 8px 0 16px;
@@ -562,7 +685,7 @@ html, body {
   color: var(--color-text-subtle);
 }
 
-/* --- Initial Screen (No API Key) --- */
+/* ─── Initial Screen ─── */
 .initial-prompt {
   position: fixed;
   inset: 0;
@@ -575,11 +698,10 @@ html, body {
   padding: 32px;
   text-align: center;
   gap: 16px;
+  transition: opacity 0.4s ease;
 }
 
-.initial-prompt.hidden {
-  display: none;
-}
+.initial-prompt.hidden { opacity: 0; pointer-events: none; }
 
 .initial-prompt svg {
   width: 64px;
@@ -589,10 +711,7 @@ html, body {
   stroke-width: 1.5;
 }
 
-.initial-prompt h2 {
-  font-size: 20px;
-  font-weight: 700;
-}
+.initial-prompt h1 { font-size: 22px; font-weight: 700; }
 
 .initial-prompt p {
   font-size: 14px;
@@ -601,7 +720,7 @@ html, body {
   max-width: 280px;
 }
 
-.btn-start {
+.btn-primary {
   padding: 14px 32px;
   background: var(--color-accent);
   color: #fff;
@@ -611,15 +730,26 @@ html, body {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  margin-top: 8px;
   transition: opacity var(--transition-fast);
 }
 
-.btn-start:active {
-  opacity: 0.8;
+.btn-primary:active { opacity: 0.8; }
+
+.btn-secondary {
+  padding: 10px 24px;
+  background: none;
+  color: var(--color-text-dim);
+  border: 1px solid var(--color-glass-border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-main);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color var(--transition-fast);
 }
 
-/* --- Toast Notification --- */
+.btn-secondary:active { color: var(--color-text); }
+
+/* ─── Toast ─── */
 .toast {
   position: fixed;
   top: max(16px, env(safe-area-inset-top));
@@ -637,25 +767,10 @@ html, body {
   pointer-events: none;
 }
 
-.toast.show {
-  transform: translateX(-50%) translateY(0);
-}
+.toast.show { transform: translateX(-50%) translateY(0); }
+.toast.error { border-color: var(--color-danger); color: var(--color-danger); }
 
-/* --- Error styling for toast --- */
-.toast.error {
-  border-color: var(--color-danger);
-  color: var(--color-danger);
-}
-
-/* --- Utility --- */
 .sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0,0,0,0);
-  white-space: nowrap;
-  border: 0;
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
 }
